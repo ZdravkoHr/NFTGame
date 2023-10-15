@@ -8,9 +8,7 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 contract MyToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor(address owner, address chest)
-        ERC20("MyToken", "MTK")
-    {
+    constructor(address owner, address chest) ERC20("MyToken", "MTK") {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
         _grantRole(MINTER_ROLE, chest);
     }
@@ -19,10 +17,7 @@ contract MyToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl {
         _mint(to, amount);
     }
 
-    function _update(address from, address to, uint256 value)
-        internal
-        override(ERC20, ERC20Pausable)
-    {
+    function _update(address from, address to, uint256 value) internal override(ERC20, ERC20Pausable) {
         super._update(from, to, value);
     }
 }
