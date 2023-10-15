@@ -5,7 +5,7 @@ contract Events {
 
     // World
     event PlayerTransferred(address indexed player, address fromWorld);
-    event RegisterPlayer(address indexed owner);
+    event RegisterPlayer(address indexed owner, uint256 indexed id);
     event AddNewAdmin(address indexed admin);
     event RemoveAdmin(address indexed admin);
 

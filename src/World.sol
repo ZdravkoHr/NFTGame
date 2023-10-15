@@ -2,6 +2,9 @@
 pragma solidity 0.8.20;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Player} from "./Player.sol";
+import {Chest} from "./Chest.sol";
+import {Coins} from "./Coins.sol";
 import "./utils/Structs.sol";
 import "./utils/Events.sol";
 import "./utils/Errors.sol";
@@ -9,26 +12,15 @@ import "./utils/Errors.sol";
 contract World is AccessControl,Events {
     bytes32 WORLD_ADMIN_ROLE = keccak256("WORLD_ADMIN");
 
-    mapping(address player => mapping(address world => bool)) public playersWaitlist;
-    mapping(address => Player) public playerInfo;
-    mapping(address => bool) public supportedWorlds;
+    Player private playerContract;
+    Coins private coinsContract;
 
     constructor(address _owner) {
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _setRoleAdmin(WORLD_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
-    }
 
-    modifier registeredPlayer(address _owner, bool _required) {
-        uint256 currentLevel = playerInfo[_owner].level;
-        if (currentLevel == 0 && _required) {
-            revert PlayerNotRegistered();
-        }
-
-        if (currentLevel != 0 && !_required) {
-            revert PlayerAlreadyRegistered();
-        }
-
-        _;
+        playerContract = new Player();
+        coinsContract = new Coins(address(this));
     }
 
     function addAdmin(address _newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -43,67 +35,20 @@ contract World is AccessControl,Events {
         emit RemoveAdmin(_admin);
     }
 
-    function updateSupportedWorlds(address _world, bool _isSupported) external onlyRole(WORLD_ADMIN_ROLE) {
-        if (_world == address(0)) revert InvalidAddress();
-        supportedWorlds[_world] = _isSupported;
-    }
 
-    function changeLevel(address _player, uint256 _newLevel) external
+    function levelUp(uint256 id) external
         onlyRole(WORLD_ADMIN_ROLE)
         registeredPlayer(msg.sender, true)
     {
-        Player memory _playerInfo = playerInfo[_player];
-        _handleLevelChange(_playerInfo, _newLevel);
+        uint8 decimals = coinsContract.decimals(); 
+        uint256 mintAmount = 5 * 10 ** decimals;
+        player.levelUp(id, mintAmount); 
+        coinsContract.mint(address(playerContract), mintAmount);
     }
 
-    function approvePlayerTransfer(address _player, address _world) external onlyRole(WORLD_ADMIN_ROLE) {
-        if (!playersWaitlist[_player][_world]) revert TransferNotRequested();
-        Player memory _playerInfo = World(_world).transferPlayer(_player);
+    function registerPlayer() external returns (uint256) {
+        uint256 id = playerContract.mint(msg.sender);
 
-        // TODO: update _playerInfo
-
-        playerInfo[_player] = _playerInfo;
-
-        emit PlayerTransferred(_player, _world);
-
-        delete playersWaitlist[_player][_world];
-    }
-
-    function registerPlayer() external registeredPlayer(msg.sender, false) {
-        Player memory _playerInfo = playerInfo[msg.sender];
-
-        _playerInfo.level = 1;
-        _playerInfo.owner = msg.sender;
-        // TODO: mint default weapon
-
-        playerInfo[msg.sender] = _playerInfo;
-        emit RegisterPlayer(msg.sender);
-    }
-
-    function requestWorldChange(address _newWorld) external registeredPlayer(msg.sender, true) {
-        World(_newWorld).addPlayerToWaitlist(msg.sender);
-    }
-
-    function addPlayerToWaitlist(address _player) external {
-        if (!supportedWorlds[msg.sender]) revert UnsupportedWorld();
-        playersWaitlist[_player][msg.sender] = true;
-    }
-
-    function transferPlayer(address _player) external returns (Player memory) {
-        if (!supportedWorlds[msg.sender]) revert UnsupportedWorld();
-        Player memory _playerInfo = playerInfo[_player];
-
-        // TODO: remove items, etc...
-
-        delete playerInfo[_player];
-
-        return _playerInfo;
-    }
-
-    function _handleLevelChange(Player memory _playerInfo, uint256 _newLevel) internal {
-        _playerInfo.level = _newLevel;
-        // TODO: change other stuff for the new level
-
-        playerInfo[_playerInfo.owner] = _playerInfo;
+        emit RegisterPlayer(msg.sender, id);
     }
 }

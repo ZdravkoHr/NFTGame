@@ -8,9 +8,10 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 contract Coins is ERC20, ERC20Burnable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
-    constructor(address owner, address chest) ERC20("MyToken", "MTK") {
+    constructor(address owner) ERC20("MyToken", "MTK") {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
-        _grantRole(MINTER_ROLE, chest);
+        _grantRole(MINTER_ROLE, owner);
+ 
     }
 
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
