@@ -1,16 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.13;
-import {AccessControl} from '@openzeppelin/contracts/access/AccessControl.sol';
-import {Player} from './Structs.sol';
-import '.utils/Events.sol';
-import '.utils/Errors.sol';
+pragma solidity 0.8.20;
 
-contract World is AccessControl {
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import "./utils/Structs.sol";
+import "./utils/Events.sol";
+import "./utils/Errors.sol";
+
+contract World is AccessControl,Events {
     bytes32 WORLD_ADMIN_ROLE = keccak256("WORLD_ADMIN");
 
-    mapping (address player => mapping (address world => bool)) public playersWaitlist;
-    mapping (address => Player) public playerInfo;
-    mapping (address => bool) public supportedWorlds;
+    mapping(address player => mapping(address world => bool)) public playersWaitlist;
+    mapping(address => Player) public playerInfo;
+    mapping(address => bool) public supportedWorlds;
 
     constructor(address _owner) {
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
@@ -18,9 +19,9 @@ contract World is AccessControl {
     }
 
     modifier registeredPlayer(address _owner, bool _required) {
-        uint256 currentLevel = playerInfo[_owner];
+        uint256 currentLevel = playerInfo[_owner].level;
         if (currentLevel == 0 && _required) {
-            revert PlayerNotRegistered()
+            revert PlayerNotRegistered();
         }
 
         if (currentLevel != 0 && !_required) {
@@ -38,7 +39,7 @@ contract World is AccessControl {
 
     function removeAdmin(address _admin) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_admin == address(0)) revert InvalidAddress();
-        _revokeRole(WORLD_ADMIN_ROLE, _newAdmin);
+        _revokeRole(WORLD_ADMIN_ROLE, _admin);
         emit RemoveAdmin(_admin);
     }
 
@@ -47,8 +48,11 @@ contract World is AccessControl {
         supportedWorlds[_world] = _isSupported;
     }
 
-    function changeLevel(address _player, uint256 _newLevel) onlyRole(WORLD_ADMIN_ROLE) registeredPlayer(msg.sender, 1) {
-        Player memory _playerInfo = playerInfo[player];
+    function changeLevel(address _player, uint256 _newLevel) external
+        onlyRole(WORLD_ADMIN_ROLE)
+        registeredPlayer(msg.sender, true)
+    {
+        Player memory _playerInfo = playerInfo[_player];
         _handleLevelChange(_playerInfo, _newLevel);
     }
 
@@ -65,9 +69,9 @@ contract World is AccessControl {
         delete playersWaitlist[_player][_world];
     }
 
-    function registerPlayer() external registeredPlayer(msg.sender, 0) {
+    function registerPlayer() external registeredPlayer(msg.sender, false) {
         Player memory _playerInfo = playerInfo[msg.sender];
-    
+
         _playerInfo.level = 1;
         _playerInfo.owner = msg.sender;
         // TODO: mint default weapon
@@ -76,8 +80,7 @@ contract World is AccessControl {
         emit RegisterPlayer(msg.sender);
     }
 
-   
-    function requestWorldChange(address _newWorld) external registeredPlayer(msg.sender, 1) {
+    function requestWorldChange(address _newWorld) external registeredPlayer(msg.sender, true) {
         World(_newWorld).addPlayerToWaitlist(msg.sender);
     }
 
@@ -101,6 +104,6 @@ contract World is AccessControl {
         _playerInfo.level = _newLevel;
         // TODO: change other stuff for the new level
 
-        playerInfo[_playerInfo.owner] = _playerInfo; 
+        playerInfo[_playerInfo.owner] = _playerInfo;
     }
 }

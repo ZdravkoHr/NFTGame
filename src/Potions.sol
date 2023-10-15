@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.13;
+pragma solidity 0.8.20;
+
+import "./utils/Events.sol";
+import "./utils/Errors.sol";
 
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC1155Burnable} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 
-contract MyToken is ERC1155, AccessControl, ERC1155Burnable {
+contract Potion is ERC1155, AccessControl, ERC1155Burnable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(address owner, address chest) ERC1155("") {
@@ -14,7 +17,7 @@ contract MyToken is ERC1155, AccessControl, ERC1155Burnable {
     }
 
     function setURI(string memory uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _setURI(uri);// TODO: make it with IDs to and upload the photos to IPFS
+        _setURI(uri); // TODO: make it with IDs to and upload the photos to IPFS
     }
 
     function mint(address account, uint256 id, uint256 amount, bytes memory data) public onlyRole(MINTER_ROLE) {
