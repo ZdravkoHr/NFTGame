@@ -11,3 +11,5 @@ error InvalidAddress();
 error TooEarly();
 error TooLateToPlay();
 error AlreadyClaimed();
+error IncorrectChance();
+error IncorrectItemType();

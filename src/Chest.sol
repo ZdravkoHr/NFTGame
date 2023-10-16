@@ -26,9 +26,8 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     }
 
     struct Common {
-        uint256 ID; //ID in ERC1155 amount in ERC20
-        uint256 firstNum;
-        uint256 secondNum;
+        uint256 ID; // ID in ERC1155 amount in ERC20
+        uint256 chance; // the chance number
     }
 
     struct Prize {
@@ -45,7 +44,11 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     uint256 public currentNumber;
     uint256 public currentID;
 
-    Player player;
+    uint256[] public weaponChances;
+    uint256[] public potionChances;
+    uint256[] public coinChances;
+
+    Player public player;
 
     constructor(
         address _vrf,
@@ -66,7 +69,19 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         blockInterval = _blockInterval;
     }
 
-    function addPrize(Prize memory prize) external onlyOwner {}
+    function addPrize(Prize memory prize) external onlyOwner {
+        if (prize.common.chance > BIP) revert IncorrectChance();
+
+        if (prize.prizeTypes == PrizeType.Weapon) {
+            weaponChances.push(prize.common.chance);
+        } else if (prize.prizeTypes == PrizeType.Potion) {
+            potionChances.push(prize.common.chance);
+        } else if (prize.prizeTypes == PrizeType.Coin) {
+            coinChances.push(prize.common.chance);
+        } else {
+            revert IncorrectItemType();
+        }
+    }
 
     function removePrize(Prize memory prize) external onlyOwner {}
 
