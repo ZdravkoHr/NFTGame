@@ -13,11 +13,13 @@ contract Player is ERC721, Ownable, IERC1155Receiver {
 
     mapping(uint256 id => uint256 level) public levels;
     mapping(uint256 id => uint256 coins) public coinsBalance;
+    mapping(uint256 id => uint256 time) public regeteredTime; // prevention for chest manipulation
 
     constructor(address initialOwner) ERC721("MyToken", "MTK") Ownable(initialOwner) {}
 
     function mint(address _to) external onlyOwner returns (uint256 id) {
         id = tokenId++;
+        regeteredTime[id] = block.timestamp;
         _mint(_to, id);
     }
 

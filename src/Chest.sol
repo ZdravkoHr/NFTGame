@@ -4,13 +4,13 @@ pragma solidity 0.8.20;
 import {VRFCoordinatorV2Interface} from "@chainlink/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-
+import {Player} from "./Player.sol";
 error InvalidType();
 // Hash user addres with random word and use that hash to score a percentage and check to find the prize that user has won, afterwards they can claim them
 
 contract Chest is VRFConsumerBaseV2, Ownable {
     // ~~~VRF stats~~~
-    VRFCoordinatorV2Interface private immutable VRF;
+    VRFCoordinatorV2Interface public immutable VRF;
     uint64 private immutable subID;
     bytes32 private immutable gasLane;
     uint32 private immutable callbackGasLimit;
@@ -26,48 +26,82 @@ contract Chest is VRFConsumerBaseV2, Ownable {
 
     struct Common {
         uint256 ID; //ID in ERC1155 amount in ERC20
-        uint256 chance; // Chance
+        uint256 firstNum; 
+        uint256 secondNum;
     }
 
     struct Prize {
         PrizeType prizeTypes;
         Common common;
     }
+    mapping (uint ID => mapping(uint time => bool claimed)) public claimed;
 
-    uint256 chanceBIP = 10000; // 10k, 1 == 0.01
-    uint256 private interval;
-    // requestId => user
-    mapping(uint256 => address) public userReqestID;
-    mapping(uint256 => Prize) public prizes;
-
-    uint256[] private winnables;
+    uint256 public constant BIP = 100000; // 100k, 1 == 0.001
+    uint256 public interval;
+    uint256 public blockInterval; // used to prevent addressLottery manipulation
+    uint256 public lastTimeCalled;
+    uint256 public currentNumber;
+    uint256 public currentID;
+    
+    Player player;
 
     constructor(
         address _vrf,
+        address _player,
         uint64 _subscriptionId,
         bytes32 _gasLane, // keyHash
-        uint256 _interval,
+        uint256 _interval, // 1 week
+        uint256 _blockInterval; // 1 day
         uint32 _callbackGasLimit,
-        address world
-    ) VRFConsumerBaseV2(_vrf) Ownable(world) {
+        address _world
+    ) VRFConsumerBaseV2(_vrf) Ownable(_world) {
         VRF = VRFCoordinatorV2Interface(_vrf);
+        player = Player(_player);
         gasLane = _gasLane;
         interval = _interval;
         subID = _subscriptionId;
         callbackGasLimit = _callbackGasLimit;
+        blockInterval = _blockInterval;
+        
     }
 
     function addPrize(Prize memory prize) external onlyOwner {}
 
     function removePrize(Prize memory prize) external onlyOwner {}
 
+    function claimPrize(uint playerID) external {
+        if(claimed[playerID][lastTimeCalled]) revert AlreadyClaimed();
+        if(player.regeteredTime(playerID) - blockInterval > lastTimeCalled) revert TooLateToPlay();
+        
+        uint luckyNumber = uint256(bytes32(keccak256(abi.encodePacked(playerID,currentNumber))));
+        uint itemType =  luckyNumber % 3;
+        uint itemNumber = luckyNumber % BIP;
+
+        if(itemType == uint256(PrizeType.Weapon)){
+            
+        }else if(itemType == uint256(PrizeType.Potion)){
+
+        }else {
+
+        }
+
+        laimed[playerID][lastTimeCalled] = true;
+    }
+
     function roll() external {
-        uint256 requestId = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
-        userReqestID[requestId] = msg.sender;
+        if(block.timestamp + interval <= lastTimeCalled ) {
+            revert TooEarly();
+        }
+        lastTimeCalled = block.timestamp;
+        currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
+    }
+
+    function adminRoll() external onlyOnwer{// if the first revert an admin can save this week's raffle
+        lastTimeCalled = block.timestamp;
+        currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
-        address player = userReqestID[requestId];
-        randomWords[0];
+        currentNumber = randomWords[0];
     }
 }

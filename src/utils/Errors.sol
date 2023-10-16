@@ -6,3 +6,8 @@ error TransferNotRequested();
 error PlayerNotRegistered();
 error UnsupportedWorld();
 error InvalidAddress();
+
+// Chest
+error TooEarly();
+error TooLateToPlay();
+error AlreadyClaimed();
