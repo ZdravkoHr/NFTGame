@@ -5,6 +5,7 @@ import {VRFCoordinatorV2Interface} from "@chainlink/src/v0.8/interfaces/VRFCoord
 import {VRFConsumerBaseV2} from "@chainlink/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Player} from "./Player.sol";
+
 error InvalidType();
 // Hash user addres with random word and use that hash to score a percentage and check to find the prize that user has won, afterwards they can claim them
 
@@ -26,7 +27,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
 
     struct Common {
         uint256 ID; //ID in ERC1155 amount in ERC20
-        uint256 firstNum; 
+        uint256 firstNum;
         uint256 secondNum;
     }
 
@@ -34,7 +35,8 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         PrizeType prizeTypes;
         Common common;
     }
-    mapping (uint ID => mapping(uint time => bool claimed)) public claimed;
+
+    mapping(uint256 ID => mapping(uint256 time => bool claimed)) public claimed;
 
     uint256 public constant BIP = 100000; // 100k, 1 == 0.001
     uint256 public interval;
@@ -42,7 +44,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     uint256 public lastTimeCalled;
     uint256 public currentNumber;
     uint256 public currentID;
-    
+
     Player player;
 
     constructor(
@@ -51,7 +53,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         uint64 _subscriptionId,
         bytes32 _gasLane, // keyHash
         uint256 _interval, // 1 week
-        uint256 _blockInterval; // 1 day
+        uint256 _blockInterval, // 1 day
         uint32 _callbackGasLimit,
         address _world
     ) VRFConsumerBaseV2(_vrf) Ownable(_world) {
@@ -62,41 +64,35 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         subID = _subscriptionId;
         callbackGasLimit = _callbackGasLimit;
         blockInterval = _blockInterval;
-        
     }
 
     function addPrize(Prize memory prize) external onlyOwner {}
 
     function removePrize(Prize memory prize) external onlyOwner {}
 
-    function claimPrize(uint playerID) external {
-        if(claimed[playerID][lastTimeCalled]) revert AlreadyClaimed();
-        if(player.regeteredTime(playerID) - blockInterval > lastTimeCalled) revert TooLateToPlay();
-        
-        uint luckyNumber = uint256(bytes32(keccak256(abi.encodePacked(playerID,currentNumber))));
-        uint itemType =  luckyNumber % 3;
-        uint itemNumber = luckyNumber % BIP;
+    function claimPrize(uint256 playerID) external {
+        if (claimed[playerID][lastTimeCalled]) revert AlreadyClaimed();
+        if (player.regeteredTime(playerID) - blockInterval > lastTimeCalled) revert TooLateToPlay();
 
-        if(itemType == uint256(PrizeType.Weapon)){
-            
-        }else if(itemType == uint256(PrizeType.Potion)){
+        uint256 luckyNumber = uint256(bytes32(keccak256(abi.encodePacked(playerID, currentNumber))));
+        uint256 itemType = luckyNumber % 3;
+        uint256 itemNumber = luckyNumber % BIP;
 
-        }else {
-
-        }
+        if (itemType == uint256(PrizeType.Weapon)) {} else if (itemType == uint256(PrizeType.Potion)) {} else {}
 
         laimed[playerID][lastTimeCalled] = true;
     }
 
     function roll() external {
-        if(block.timestamp + interval <= lastTimeCalled ) {
+        if (block.timestamp + interval <= lastTimeCalled) {
             revert TooEarly();
         }
         lastTimeCalled = block.timestamp;
         currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
     }
 
-    function adminRoll() external onlyOnwer{// if the first revert an admin can save this week's raffle
+    function adminRoll() external onlyOnwer {
+        // if the first revert an admin can save this week's raffle
         lastTimeCalled = block.timestamp;
         currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
     }
