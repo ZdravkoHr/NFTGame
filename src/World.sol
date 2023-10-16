@@ -9,7 +9,7 @@ import "./utils/Structs.sol";
 import "./utils/Events.sol";
 import "./utils/Errors.sol";
 
-contract World is AccessControl,Events {
+contract World is AccessControl, Events {
     bytes32 WORLD_ADMIN_ROLE = keccak256("WORLD_ADMIN");
 
     Player private playerContract;
@@ -35,14 +35,10 @@ contract World is AccessControl,Events {
         emit RemoveAdmin(_admin);
     }
 
-
-    function levelUp(uint256 id) external
-        onlyRole(WORLD_ADMIN_ROLE)
-        registeredPlayer(msg.sender, true)
-    {
-        uint8 decimals = coinsContract.decimals(); 
+    function levelUp(uint256 id) external onlyRole(WORLD_ADMIN_ROLE) registeredPlayer(msg.sender, true) {
+        uint8 decimals = coinsContract.decimals();
         uint256 mintAmount = 5 * 10 ** decimals;
-        player.levelUp(id, mintAmount); 
+        player.levelUp(id, mintAmount);
         coinsContract.mint(address(playerContract), mintAmount);
     }
 

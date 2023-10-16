@@ -69,8 +69,5 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         address player = userReqestID[requestId];
         randomWords[0];
-
-
- 
     }
 }

@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import "./utils/Events.sol";
+
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-contract Coins is ERC20, ERC20Burnable, AccessControl {
+contract Coins is ERC20, ERC20Burnable, AccessControl, Events {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(address owner) ERC20("MyToken", "MTK") {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
         _grantRole(MINTER_ROLE, owner);
- 
     }
 
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
