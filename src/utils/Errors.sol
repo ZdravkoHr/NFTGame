@@ -10,6 +10,8 @@ error InvalidAddress();
 // Chest
 error TooEarly();
 error TooLateToPlay();
+error ChanceTooSmall();
 error AlreadyClaimed();
 error IncorrectChance();
 error IncorrectItemType();
+

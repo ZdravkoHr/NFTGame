@@ -25,16 +25,6 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         Coin
     }
 
-    struct Common {
-        uint256 ID; // ID in ERC1155 amount in ERC20
-        uint256 chance; // the chance number
-    }
-
-    struct Prize {
-        PrizeType prizeTypes;
-        Common common;
-    }
-
     mapping(uint256 ID => mapping(uint256 time => bool claimed)) public claimed;
 
     uint256 public constant BIP = 100000; // 100k, 1 == 0.001
@@ -44,9 +34,15 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     uint256 public currentNumber;
     uint256 public currentID;
 
+    uint256 weaponCount;
+    uint256 potionCount;
+    uint256 coinCount;
+
     uint256[] public weaponChances;
     uint256[] public potionChances;
     uint256[] public coinChances;
+
+    mapping (PrizeType types => mapping(uint256 id => uint256)) public chances;
 
     Player public player;
 
@@ -69,15 +65,31 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         blockInterval = _blockInterval;
     }
 
-    function addPrize(Prize memory prize) external onlyOwner {
-        if (prize.common.chance > BIP) revert IncorrectChance();
+    function addPrize(PrizeType itemType, uint256 chance) external onlyOwner {
+        if (chance > BIP) revert IncorrectChance();
 
-        if (prize.prizeTypes == PrizeType.Weapon) {
-            weaponChances.push(prize.common.chance);
-        } else if (prize.prizeTypes == PrizeType.Potion) {
-            potionChances.push(prize.common.chance);
-        } else if (prize.prizeTypes == PrizeType.Coin) {
-            coinChances.push(prize.common.chance);
+
+        if (itemType == PrizeType.Weapon) {
+            if(chances[PrizeType.Weapon][weaponCount] <= chance) revert ChanceTooSmall();
+
+            weaponCount++;
+            weaponChances.push(chance);
+            chances[PrizeType.Weapon][weaponCount] = chance;
+
+        } else if (itemType == PrizeType.Potion) {
+            if(chances[PrizeType.Potion][potionCount] <= chance) revert ChanceTooSmall();
+
+            potionCount++;
+            potionChances.push(chance);
+            chances[PrizeType.Potion][potionCount] = chance;
+
+        } else if (itemType == PrizeType.Coin) {
+            if(chances[PrizeType.Coin][coinCount] <= chance) revert ChanceTooSmall();
+
+            coinCount++;
+            coinChances.push(chance);
+            chances[PrizeType.Coin][coinCount] = chance;
+
         } else {
             revert IncorrectItemType();
         }
