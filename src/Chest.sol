@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {VRFCoordinatorV2Interface} from "@chainlink/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import {VRFConsumerBaseV2} from "@chainlink/src/v0.8/vrf/VRFConsumerBaseV2.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Player} from "./Player.sol";
-
-error InvalidType();
-// Hash user addres with random word and use that hash to score a percentage and check to find the prize that user has won, afterwards they can claim them
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {VRFConsumerBaseV2} from "@chainlink/src/v0.8/vrf/VRFConsumerBaseV2.sol";
+import {EnumerableSet} from "@openzeppelincontracts/utils/structs/EnumerableSet.sol";
+import {VRFCoordinatorV2Interface} from "@chainlink/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 
 contract Chest is VRFConsumerBaseV2, Ownable {
+    using EnumerableSet for EnumerableSet.UintSet;
+
     // ~~~VRF stats~~~
     VRFCoordinatorV2Interface public immutable VRF;
     uint64 private immutable subID;
@@ -25,6 +25,10 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         Coin
     }
 
+    EnumerableSet.UintSet private weaponChances;
+    EnumerableSet.UintSet private potionChances;
+    EnumerableSet.UintSet private coinChances;
+
     mapping(uint256 ID => mapping(uint256 time => bool claimed)) public claimed;
 
     uint256 public constant BIP = 100000; // 100k, 1 == 0.001
@@ -34,15 +38,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     uint256 public currentNumber;
     uint256 public currentID;
 
-    uint256 weaponCount;
-    uint256 potionCount;
-    uint256 coinCount;
-
-    uint256[] public weaponChances;
-    uint256[] public potionChances;
-    uint256[] public coinChances;
-
-    mapping (PrizeType types => mapping(uint256 id => uint256)) public chances;
+    mapping(PrizeType types => mapping(uint256 id => uint256)) public chances;
 
     Player public player;
 
@@ -68,34 +64,42 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     function addPrize(PrizeType itemType, uint256 chance) external onlyOwner {
         if (chance > BIP) revert IncorrectChance();
 
-
         if (itemType == PrizeType.Weapon) {
-            if(chances[PrizeType.Weapon][weaponCount] <= chance) revert ChanceTooSmall();
-
-            weaponCount++;
-            weaponChances.push(chance);
-            chances[PrizeType.Weapon][weaponCount] = chance;
-
+            if (weaponChances.length() > 0) {
+                if (weaponChances.at(weaponChances.length() - 1) >= chance) revert ChanceTooSmall();
+            }
+            if (!weaponChances.add(chance)) revert WeaponNotAdded(chance);
+            
         } else if (itemType == PrizeType.Potion) {
-            if(chances[PrizeType.Potion][potionCount] <= chance) revert ChanceTooSmall();
-
-            potionCount++;
-            potionChances.push(chance);
-            chances[PrizeType.Potion][potionCount] = chance;
+            if (potionChances.length() > 0) {
+                if (potionChances.at(potionChances.length() - 1) >= chance) revert ChanceTooSmall();
+            }
+            if (!potionChances.add(chance)) revert PotionNotAdded(chance);
 
         } else if (itemType == PrizeType.Coin) {
-            if(chances[PrizeType.Coin][coinCount] <= chance) revert ChanceTooSmall();
-
-            coinCount++;
-            coinChances.push(chance);
-            chances[PrizeType.Coin][coinCount] = chance;
+            if (coinChances.length() > 0) {
+                if (coinChances.at(coinChances.length() - 1) >= chance) revert ChanceTooSmall();
+            }
+            if (!coinChances.add(chance)) revert CoinNotAdded(chance);
 
         } else {
             revert IncorrectItemType();
         }
     }
 
-    function removePrize(Prize memory prize) external onlyOwner {}
+    function removePrize(PrizeType itemType, uint256 chance) external onlyOwner {
+        if (chance > BIP) revert IncorrectChance();
+
+        if (itemType == PrizeType.Weapon) {
+            if (!weaponChances.remove(chance)) revert WeaponNotRemoved(chance);
+        } else if (itemType == PrizeType.Potion) {
+            if (!potionChances.remove(chance)) revert PotionNotRemoved(chance);
+        } else if (itemType == PrizeType.Coin) {
+            if (!coinChances.remove(chance)) revert CoinNotRemoved(chance);
+        } else {
+            revert IncorrectItemType();
+        }
+    }
 
     function claimPrize(uint256 playerID) external {
         if (claimed[playerID][lastTimeCalled]) revert AlreadyClaimed();
@@ -103,11 +107,24 @@ contract Chest is VRFConsumerBaseV2, Ownable {
 
         uint256 luckyNumber = uint256(bytes32(keccak256(abi.encodePacked(playerID, currentNumber))));
         uint256 itemType = luckyNumber % 3;
-        uint256 itemNumber = luckyNumber % BIP;
+        uint256 itemChance = luckyNumber % BIP;
 
-        if (itemType == uint256(PrizeType.Weapon)) {} else if (itemType == uint256(PrizeType.Potion)) {} else {}
+        if (itemType == uint256(PrizeType.Weapon)) {
+            _itemRoll(weaponChances, itemChance);
+        } else if (itemType == uint256(PrizeType.Potion)) {
+            _itemRoll(potionChances, itemChance);
+        } else {
+            _itemRoll(coinChances, itemChance);
+        }
 
         laimed[playerID][lastTimeCalled] = true;
+    }
+
+    function _itemRoll(EnumerableSet.UintSet set, uint256 chance) internal {
+        uint256 lenght = set.lenght();
+        for (uint256 i; i < lenght; i++) {
+            if (set.at(i + 1) > chance) {}
+        }
     }
 
     function roll() external {

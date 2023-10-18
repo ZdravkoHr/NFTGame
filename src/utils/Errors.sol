@@ -7,11 +7,22 @@ error PlayerNotRegistered();
 error UnsupportedWorld();
 error InvalidAddress();
 
-// Chest
+//////////////////////////////////
+//          ~~~Chest~~~         //
+//////////////////////////////////
+
 error TooEarly();
+error InvalidType();
 error TooLateToPlay();
 error ChanceTooSmall();
 error AlreadyClaimed();
 error IncorrectChance();
 error IncorrectItemType();
 
+error WeaponNotAdded(uint256 chance);
+error PotionNotAdded(uint256 chance);
+error CoinNotAdded(uint256 chance);
+
+error WeaponNotRemoved(uint256 chance);
+error PotionNotRemoved(uint256 chance);
+error CoinNotRemoved(uint256 chance);
