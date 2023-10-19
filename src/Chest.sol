@@ -25,9 +25,16 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         Coin
     }
 
+    struct Prize {
+        uint256 amount;
+        uint256 ID;
+    }
+
     EnumerableSet.UintSet private weaponChances;
     EnumerableSet.UintSet private potionChances;
     EnumerableSet.UintSet private coinChances;
+    
+    mapping(EnumerableSet.UintSet => mapping(uint256 ID => Prize)) public prizes;
 
     mapping(uint256 ID => mapping(uint256 time => bool claimed)) public claimed;
 
@@ -37,8 +44,6 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     uint256 public lastTimeCalled;
     uint256 public currentNumber;
     uint256 public currentID;
-
-    mapping(PrizeType types => mapping(uint256 id => uint256)) public chances;
 
     Player public player;
 
@@ -59,45 +64,55 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         subID = _subscriptionId;
         callbackGasLimit = _callbackGasLimit;
         blockInterval = _blockInterval;
+
+        if (!weaponChances.add(0)) revert ChanceNotAdded();
+        if (!potionChances.add(0)) revert ChanceNotAdded();
+        if (!coinChances.add(0)) revert ChanceNotAdded();
     }
 
-    function addPrize(PrizeType itemType, uint256 chance) external onlyOwner {
+    function addChance(PrizeType itemType, uint256 chance, uint256 amount, uint256 ID) external onlyOwner {
         if (chance > BIP) revert IncorrectChance();
 
         if (itemType == PrizeType.Weapon) {
-            if (weaponChances.length() > 0) {
-                if (weaponChances.at(weaponChances.length() - 1) >= chance) revert ChanceTooSmall();
+            uint256 length = weaponChances.length();
+            if (length > 0) {
+                if (weaponChances.at(length - 1) >= chance) revert ChanceTooSmall();
             }
+            prizes[itemType][length].amount = amount;
+            prizes[itemType][length].ID = ID;
             if (!weaponChances.add(chance)) revert WeaponNotAdded(chance);
-            
         } else if (itemType == PrizeType.Potion) {
-            if (potionChances.length() > 0) {
-                if (potionChances.at(potionChances.length() - 1) >= chance) revert ChanceTooSmall();
+            uint256 length = weaponChances.length();
+            if (length > 0) {
+                if (potionChances.at(length - 1) >= chance) revert ChanceTooSmall();
             }
+            prizes[itemType][length].amount = amount;
+            prizes[itemType][length].ID = ID;
             if (!potionChances.add(chance)) revert PotionNotAdded(chance);
-
         } else if (itemType == PrizeType.Coin) {
-            if (coinChances.length() > 0) {
-                if (coinChances.at(coinChances.length() - 1) >= chance) revert ChanceTooSmall();
+            uint256 length = weaponChances.length();
+            if (length > 0) {
+                if (coinChances.at(length - 1) >= chance) revert ChanceTooSmall();
             }
+            prizes[itemType][length].amount = amount;
+            prizes[itemType][length].ID = ID;
             if (!coinChances.add(chance)) revert CoinNotAdded(chance);
-
         } else {
             revert IncorrectItemType();
         }
     }
 
-    function removePrize(PrizeType itemType, uint256 chance) external onlyOwner {
-        if (chance > BIP) revert IncorrectChance();
-
-        if (itemType == PrizeType.Weapon) {
-            if (!weaponChances.remove(chance)) revert WeaponNotRemoved(chance);
-        } else if (itemType == PrizeType.Potion) {
-            if (!potionChances.remove(chance)) revert PotionNotRemoved(chance);
-        } else if (itemType == PrizeType.Coin) {
-            if (!coinChances.remove(chance)) revert CoinNotRemoved(chance);
-        } else {
-            revert IncorrectItemType();
+    function addChances(
+        PrizeType[] calldata itemTypes,
+        uint256[] calldata chances,
+        uint256[] calldata amounts,
+        uint256[] calldata IDs
+    ) external onlyOwner {
+        uint256 length = itemTypes.length;
+        if (length != chances.length || length != amounts.length || length != IDs.length) {
+            for (uint256 i; i < length; i++) {
+                addChance(itemTypes[i], chances[i], amounts[i], IDs[i]);
+            }
         }
     }
 
@@ -120,10 +135,17 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         laimed[playerID][lastTimeCalled] = true;
     }
 
-    function _itemRoll(EnumerableSet.UintSet set, uint256 chance) internal {
-        uint256 lenght = set.lenght();
-        for (uint256 i; i < lenght; i++) {
-            if (set.at(i + 1) > chance) {}
+    function _itemRoll(EnumerableSet.UintSet set, uint256 chance) internal view returns (uint256) {
+        uint256 length = set.length();
+        for (uint256 i; i < length; i++) {
+            if (set.at(i) <= chance) {
+                if (set.at(set.length() - 1) == i) {
+                    return i;
+                } else if (set.at(i + 1) > chance) {
+                    return i;
+                }
+                continue;
+            }
         }
     }
 

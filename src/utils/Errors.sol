@@ -14,6 +14,7 @@ error InvalidAddress();
 error TooEarly();
 error InvalidType();
 error TooLateToPlay();
+error ChanceNotAdded();
 error ChanceTooSmall();
 error AlreadyClaimed();
 error IncorrectChance();
