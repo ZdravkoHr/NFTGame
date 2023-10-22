@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.20;
 
-abstract contract Events {
+library Events {
     // World
     event PlayerTransferred(address indexed player, address fromWorld);
     event RegisterPlayer(address indexed owner, uint256 indexed id);
@@ -15,4 +15,9 @@ abstract contract Events {
 
     // Coins
     event CoinsMinted(address indexed minter, uint256 amount);
+
+    // Chest
+    event rollReqested(uint256 indexed id);
+    event NewRandomNumber(uint256 indexed time, uint256 indexed number);
+    event ItemAdded(PrizeType indexed itemType, uint256 indexed chance, uint256 indexed ID, uint256 amount);
 }

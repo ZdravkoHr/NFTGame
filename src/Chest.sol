@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import {Coins} from "./Coins.sol";
 import {Player} from "./Player.sol";
+import {Potions} from "./Potions.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {VRFConsumerBaseV2} from "@chainlink/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import {EnumerableSet} from "@openzeppelincontracts/utils/structs/EnumerableSet.sol";
@@ -33,7 +35,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     EnumerableSet.UintSet private weaponChances;
     EnumerableSet.UintSet private potionChances;
     EnumerableSet.UintSet private coinChances;
-    
+
     mapping(EnumerableSet.UintSet => mapping(uint256 ID => Prize)) public prizes;
 
     mapping(uint256 ID => mapping(uint256 time => bool claimed)) public claimed;
@@ -46,10 +48,14 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     uint256 public currentID;
 
     Player public player;
+    Coin coin;
+    Potion potion;
 
     constructor(
         address _vrf,
         address _player,
+        address _coin,
+        address _potion,
         uint64 _subscriptionId,
         bytes32 _gasLane, // keyHash
         uint256 _interval, // 1 week
@@ -59,6 +65,8 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     ) VRFConsumerBaseV2(_vrf) Ownable(_world) {
         VRF = VRFCoordinatorV2Interface(_vrf);
         player = Player(_player);
+        coin = Coin(_coin);
+        potion = Potion(_potion);
         gasLane = _gasLane;
         interval = _interval;
         subID = _subscriptionId;
@@ -100,6 +108,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         } else {
             revert IncorrectItemType();
         }
+        emit ItemAdded(itemType, chance, ID, amount);
     }
 
     function addChances(
@@ -125,13 +134,16 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         uint256 itemChance = luckyNumber % BIP;
 
         if (itemType == uint256(PrizeType.Weapon)) {
-            _itemRoll(weaponChances, itemChance);
+            item = _itemRoll(weaponChances, itemChance);
+            prizes[weaponChances][item];
+            //@todo transfer the weapons
         } else if (itemType == uint256(PrizeType.Potion)) {
-            _itemRoll(potionChances, itemChance);
+            item = _itemRoll(potionChances, itemChance);
+            potion.mint(msg.sender, prizes[potionChances][item].ID, prizes[potionChances][item].amount);
         } else {
-            _itemRoll(coinChances, itemChance);
+            item = _itemRoll(coinChances, itemChance);
+            potion.mint(msg.sender, prizes[coinChances][item].amount);
         }
-
         laimed[playerID][lastTimeCalled] = true;
     }
 
@@ -150,20 +162,22 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     }
 
     function roll() external {
-        if (block.timestamp + interval <= lastTimeCalled) {
+        if (block.timestamp <= lastTimeCalled + interval) {
             revert TooEarly();
         }
-        lastTimeCalled = block.timestamp;
+        lastTimeCalled = (block.timestamp / interval) * interval;
         currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
+        emit rollReqested(currentID);
     }
 
     function adminRoll() external onlyOnwer {
         // if the first revert an admin can save this week's raffle
-        lastTimeCalled = block.timestamp;
+        lastTimeCalled = (block.timestamp / interval) * interval;
         currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
     }
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         currentNumber = randomWords[0];
+        emit NewRandomNumber(block.timestamp, randomWords[0]);
     }
 }
