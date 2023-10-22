@@ -48,7 +48,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     uint256 public currentID;
 
     Player public player;
-    Coin coin;
+    Coins coins;
     Potion potion;
 
     constructor(
@@ -65,7 +65,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     ) VRFConsumerBaseV2(_vrf) Ownable(_world) {
         VRF = VRFCoordinatorV2Interface(_vrf);
         player = Player(_player);
-        coin = Coin(_coin);
+        coins = Coins(_coin);
         potion = Potion(_potion);
         gasLane = _gasLane;
         interval = _interval;
@@ -142,7 +142,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
             potion.mint(msg.sender, prizes[potionChances][item].ID, prizes[potionChances][item].amount);
         } else {
             item = _itemRoll(coinChances, itemChance);
-            potion.mint(msg.sender, prizes[coinChances][item].amount);
+            coins.mint(msg.sender, prizes[coinChances][item].amount);
         }
         laimed[playerID][lastTimeCalled] = true;
     }

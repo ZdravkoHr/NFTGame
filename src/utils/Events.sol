@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 library Events {
     // World
     event PlayerTransferred(address indexed player, address fromWorld);
-    event RegisterPlayer(address indexed owner, uint256 indexed id);
+    event RegisterPlayer(address indexed owner);
     event AddNewAdmin(address indexed admin);
     event RemoveAdmin(address indexed admin);
 

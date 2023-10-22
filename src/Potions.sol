@@ -13,7 +13,7 @@ contract Potion is ERC1155, AccessControl, ERC1155Burnable, Events {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     string private _uri;
 
-    constructor(address owner, address chest) ERC1155("") {
+    constructor(address owner, address chest) ERC1155("Potions") {
         _grantRole(DEFAULT_ADMIN_ROLE, owner);
         _grantRole(MINTER_ROLE, chest);
     }
