@@ -6,6 +6,7 @@ error TransferNotRequested();
 error PlayerNotRegistered();
 error UnsupportedWorld();
 error InvalidAddress();
+error NotAllowed();
 
 //////////////////////////////////
 //          ~~~Chest~~~         //

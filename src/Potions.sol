@@ -40,6 +40,10 @@ contract Potion is ERC1155, AccessControl, ERC1155Burnable, Events {
         emit BatchPotionMinted(to, ids, amounts);
     }
 
+    function setApprovalForAll(address, bool) public {
+        revert NotAllowed();
+    }
+
     function supportsInterface(bytes4 interfaceId) public view override(ERC1155, AccessControl) returns (bool) {
         return super.supportsInterface(interfaceId);
     }

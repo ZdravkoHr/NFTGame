@@ -14,16 +14,16 @@ contract World is AccessControl, Events {
     bytes32 WORLD_ADMIN_ROLE = keccak256("WORLD_ADMIN");
 
     Player private playerContract;
-    Coins private coinsContract;
-    Potion private potionsContract;
     Chest private chestContract;
+    Coins public coinsContract;
+    Potion public potionsContract;
 
-    mapping (address user => uint256 playerCount) private playerCount;
-    mapping (address player => address owner) private playerOwners;
+    mapping(address user => uint256 playerCount) private playerCount;
+    mapping(address player => address owner) private playerOwners;
 
     uint256 levelMintAmount;
 
-    constructor(address _owner,uint256 _levelMintAmount) {
+    constructor(address _owner, uint256 _levelMintAmount) {
         _grantRole(DEFAULT_ADMIN_ROLE, _owner);
         _setRoleAdmin(WORLD_ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
 
@@ -46,7 +46,7 @@ contract World is AccessControl, Events {
     }
 
     function levelUp(address player) external onlyRole(WORLD_ADMIN_ROLE) {
-        if(playerOwners[player] == address(0)) revert InvalidAddress();
+        if (playerOwners[player] == address(0)) revert InvalidAddress();
         uint8 decimals = coinsContract.decimals();
         uint256 mintAmount = levelMintAmount * 10 ** decimals;
         player.levelUp(id);
@@ -61,8 +61,7 @@ contract World is AccessControl, Events {
         emit RegisterPlayer(msg.sender);
     }
 
-
-    function changeLevelMint(uint256  _levelMintAmount) external onlyRole(DEFAULT_ADMIN_ROLE){
+    function changeLevelMint(uint256 _levelMintAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
         levelMintAmount = _levelMintAmount;
     }
 }
