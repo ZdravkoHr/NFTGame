@@ -3,7 +3,7 @@ pragma solidity 0.8.20;
 
 import {Coins} from "./Coins.sol";
 import {Player} from "./Player.sol";
-import {Potions} from "./Potions.sol";
+import {Item} from "./Item.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {VRFConsumerBaseV2} from "@chainlink/src/v0.8/vrf/VRFConsumerBaseV2.sol";
 import {EnumerableSet} from "@openzeppelincontracts/utils/structs/EnumerableSet.sol";
@@ -40,22 +40,22 @@ contract Chest is VRFConsumerBaseV2, Ownable {
 
     mapping(uint256 ID => mapping(uint256 time => bool claimed)) public claimed;
 
-    uint256 public constant BIP = 100000; // 100k, 1 == 0.001
-    uint256 public interval;
-    uint256 public blockInterval; // used to prevent addressLottery manipulation
-    uint256 public lastTimeCalled;
-    uint256 public currentNumber;
-    uint256 public currentID;
+    uint256 private constant BIP = 100000; // 100k, 1 == 0.001
+    uint256 private lastTimeCalled;
+    uint256 private currentNumber;
+    uint256 private blockInterval; // used to prevent addressLottery manipulation
+    uint256 private currentID;
+    uint256 private interval;
 
-    Player public player;
-    Coins coins;
-    Potion potion;
+    Player private playerContract;
+    Coins private coinsContract;
+    Item private itemContract;
 
     constructor(
         address _vrf,
         address _player,
         address _coin,
-        address _potion,
+        address _itemContract,
         uint64 _subscriptionId,
         bytes32 _gasLane, // keyHash
         uint256 _interval, // 1 week
@@ -65,8 +65,8 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     ) VRFConsumerBaseV2(_vrf) Ownable(_world) {
         VRF = VRFCoordinatorV2Interface(_vrf);
         player = Player(_player);
-        coins = Coins(_coin);
-        potion = Potion(_potion);
+        coinsContract = Coins(_coin);
+        itemContract = Item(_itemContract);
         gasLane = _gasLane;
         interval = _interval;
         subID = _subscriptionId;
@@ -132,17 +132,18 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         uint256 luckyNumber = uint256(bytes32(keccak256(abi.encodePacked(playerID, currentNumber))));
         uint256 itemType = luckyNumber % 3;
         uint256 itemChance = luckyNumber % BIP;
+        uint256 item;
 
         if (itemType == uint256(PrizeType.Weapon)) {
             item = _itemRoll(weaponChances, itemChance);
             prizes[weaponChances][item];
-            //@todo transfer the weapons
+            itemContract.mint(msg.sender, prizes[potionChances][item].ID, prizes[potionChances][item].amount);
         } else if (itemType == uint256(PrizeType.Potion)) {
             item = _itemRoll(potionChances, itemChance);
-            potion.mint(msg.sender, prizes[potionChances][item].ID, prizes[potionChances][item].amount);
+            itemContract.mint(msg.sender, prizes[potionChances][item].ID, prizes[potionChances][item].amount);
         } else {
             item = _itemRoll(coinChances, itemChance);
-            coins.mint(msg.sender, prizes[coinChances][item].amount);
+            coinsContract.mint(msg.sender, prizes[coinChances][item].amount);
         }
         laimed[playerID][lastTimeCalled] = true;
     }

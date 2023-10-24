@@ -16,7 +16,7 @@ contract World is AccessControl, Events {
     Player private playerContract;
     Chest private chestContract;
     Coins public coinsContract;
-    Potion public potionsContract;
+    Item public itemContract;
 
     mapping(address user => uint256 playerCount) private playerCount;
     mapping(address player => address owner) private playerOwners;
@@ -29,7 +29,7 @@ contract World is AccessControl, Events {
 
         // chestContract = new Chest()
         coinsContract = new Coins(address(this),address(this));
-        potionsContract = new Potion(address(this),address(this));
+        itemContract = new Item(address(this),address(this));
         levelMintAmount = _levelMintAmount;
     }
 
