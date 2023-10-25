@@ -11,7 +11,7 @@ library Events {
     // Potions
     event URIset(string indexed uri);
     event PotionMinted(address minter, uint256 indexed IDs, uint256 indexed amount);
-    event BatchPotionMinted(address minter, uint256[] indexed IDs, uint256 indexed amount);
+    event BatchPotionMinted(address minter, uint256[] indexed IDs, uint256[] indexed amount);
 
     // Coins
     event CoinsMinted(address indexed minter, uint256 amount);
@@ -19,5 +19,5 @@ library Events {
     // Chest
     event rollReqested(uint256 indexed id);
     event NewRandomNumber(uint256 indexed time, uint256 indexed number);
-    event ItemAdded(PrizeType indexed itemType, uint256 indexed chance, uint256 indexed ID, uint256 amount);
+    event ItemAdded(uint256 itemType, uint256 indexed chance, uint256 indexed ID, uint256 amount);
 }

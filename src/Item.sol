@@ -9,7 +9,7 @@ import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ERC1155Burnable} from "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155Burnable.sol";
 
-contract Item is ERC1155, AccessControl, ERC1155Burnable, Events {
+contract Item is ERC1155, AccessControl, ERC1155Burnable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     string private _uri;
 
@@ -20,7 +20,7 @@ contract Item is ERC1155, AccessControl, ERC1155Burnable, Events {
 
     function setURI(string memory uri) public onlyRole(DEFAULT_ADMIN_ROLE) {
         _setURI(uri);
-        emit URIset(uri);
+        emit Events.URIset(uri);
     }
 
     function getURI(uint256 tokenID) external view returns (string memory) {
@@ -29,7 +29,7 @@ contract Item is ERC1155, AccessControl, ERC1155Burnable, Events {
 
     function mint(address account, uint256 id, uint256 amount, bytes memory data) public onlyRole(MINTER_ROLE) {
         _mint(account, id, amount, data);
-        emit PotionMinted(account, id, amount);
+        emit Events.PotionMinted(account, id, amount);
     }
 
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
@@ -37,10 +37,10 @@ contract Item is ERC1155, AccessControl, ERC1155Burnable, Events {
         onlyRole(MINTER_ROLE)
     {
         _mintBatch(to, ids, amounts, data);
-        emit BatchPotionMinted(to, ids, amounts);
+        emit Events.BatchPotionMinted(to, ids, amounts);
     }
 
-    function setApprovalForAll(address, bool) public {
+    function setApprovalForAll(address, bool) public override{
         revert NotAllowed();
     }
 

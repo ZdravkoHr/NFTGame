@@ -7,7 +7,7 @@ error PlayerNotRegistered();
 error UnsupportedWorld();
 error InvalidAddress();
 error NotAllowed();
-
+error OnlyWorld();
 //////////////////////////////////
 //          ~~~Chest~~~         //
 //////////////////////////////////

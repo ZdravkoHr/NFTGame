@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import "./utils/Events.sol";
+import "./utils/Errors.sol";
+
 import {Coins} from "./Coins.sol";
 import {Player} from "./Player.sol";
 import {Item} from "./Item.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {VRFConsumerBaseV2} from "@chainlink/src/v0.8/vrf/VRFConsumerBaseV2.sol";
-import {EnumerableSet} from "@openzeppelincontracts/utils/structs/EnumerableSet.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {VRFCoordinatorV2Interface} from "@chainlink/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 
 contract Chest is VRFConsumerBaseV2, Ownable {
@@ -36,7 +39,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     EnumerableSet.UintSet private potionChances;
     EnumerableSet.UintSet private coinChances;
 
-    mapping(EnumerableSet.UintSet => mapping(uint256 ID => Prize)) public prizes;
+    mapping(PrizeType prizeType => mapping(uint256 ID => Prize)) public prizes;
 
     mapping(uint256 ID => mapping(uint256 time => bool claimed)) public claimed;
 
@@ -64,7 +67,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         address _world
     ) VRFConsumerBaseV2(_vrf) Ownable(_world) {
         VRF = VRFCoordinatorV2Interface(_vrf);
-        player = Player(_player);
+        playerContract = Player(_player);
         coinsContract = Coins(_coin);
         itemContract = Item(_itemContract);
         gasLane = _gasLane;
@@ -79,6 +82,10 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     }
 
     function addChance(PrizeType itemType, uint256 chance, uint256 amount, uint256 ID) external onlyOwner {
+        _addChance(itemType, chance, amount, ID);
+    }
+
+    function _addChance(PrizeType itemType, uint256 chance, uint256 amount, uint256 ID) internal {
         if (chance > BIP) revert IncorrectChance();
 
         if (itemType == PrizeType.Weapon) {
@@ -108,7 +115,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         } else {
             revert IncorrectItemType();
         }
-        emit ItemAdded(itemType, chance, ID, amount);
+        emit Events.ItemAdded(uint256(itemType), chance, ID, amount);
     }
 
     function addChances(
@@ -120,35 +127,38 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         uint256 length = itemTypes.length;
         if (length != chances.length || length != amounts.length || length != IDs.length) {
             for (uint256 i; i < length; i++) {
-                addChance(itemTypes[i], chances[i], amounts[i], IDs[i]);
+                _addChance(itemTypes[i], chances[i], amounts[i], IDs[i]);
             }
         }
     }
 
     function claimPrize(uint256 playerID) external {
         if (claimed[playerID][lastTimeCalled]) revert AlreadyClaimed();
-        if (player.regeteredTime(playerID) - blockInterval > lastTimeCalled) revert TooLateToPlay();
+        if (playerContract.regeteredTime(playerID) - blockInterval > lastTimeCalled) revert TooLateToPlay();
 
         uint256 luckyNumber = uint256(bytes32(keccak256(abi.encodePacked(playerID, currentNumber))));
         uint256 itemType = luckyNumber % 3;
         uint256 itemChance = luckyNumber % BIP;
         uint256 item;
+        Prize memory wonPrize;
 
         if (itemType == uint256(PrizeType.Weapon)) {
             item = _itemRoll(weaponChances, itemChance);
-            prizes[weaponChances][item];
-            itemContract.mint(msg.sender, prizes[potionChances][item].ID, prizes[potionChances][item].amount);
+            wonPrize = prizes[PrizeType.Weapon][item];
+            itemContract.mint(msg.sender, wonPrize.ID, wonPrize.amount,"");
         } else if (itemType == uint256(PrizeType.Potion)) {
+     
             item = _itemRoll(potionChances, itemChance);
-            itemContract.mint(msg.sender, prizes[potionChances][item].ID, prizes[potionChances][item].amount);
+            wonPrize = prizes[PrizeType.Potion][item];
+            itemContract.mint(msg.sender, wonPrize.ID, wonPrize.amount,"");
         } else {
             item = _itemRoll(coinChances, itemChance);
-            coinsContract.mint(msg.sender, prizes[coinChances][item].amount);
+            coinsContract.mint(msg.sender, prizes[PrizeType.Coin][item].amount);
         }
-        laimed[playerID][lastTimeCalled] = true;
+        claimed[playerID][lastTimeCalled] = true;
     }
 
-    function _itemRoll(EnumerableSet.UintSet set, uint256 chance) internal view returns (uint256) {
+    function _itemRoll(EnumerableSet.UintSet storage set, uint256 chance) internal view returns (uint256) {
         uint256 length = set.length();
         for (uint256 i; i < length; i++) {
             if (set.at(i) <= chance) {
@@ -168,10 +178,10 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         }
         lastTimeCalled = (block.timestamp / interval) * interval;
         currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
-        emit rollReqested(currentID);
+        emit Events.rollReqested(currentID);
     }
 
-    function adminRoll() external onlyOnwer {
+    function adminRoll() external onlyOwner {
         // if the first revert an admin can save this week's raffle
         lastTimeCalled = (block.timestamp / interval) * interval;
         currentID = VRF.requestRandomWords(gasLane, subID, REQUEST_CONFIRMATIONS, callbackGasLimit, NUM_WORDS);
@@ -179,6 +189,6 @@ contract Chest is VRFConsumerBaseV2, Ownable {
 
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         currentNumber = randomWords[0];
-        emit NewRandomNumber(block.timestamp, randomWords[0]);
+        emit Events.NewRandomNumber(block.timestamp, randomWords[0]);
     }
 }

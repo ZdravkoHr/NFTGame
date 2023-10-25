@@ -2,15 +2,14 @@
 pragma solidity 0.8.20;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Potions} from "./Potions.sol";
+import {Item} from "./Item.sol";
 import {Player} from "./Player.sol";
 import {Chest} from "./Chest.sol";
 import {Coins} from "./Coins.sol";
-import "./utils/Structs.sol";
 import "./utils/Events.sol";
 import "./utils/Errors.sol";
 
-contract World is AccessControl, Events {
+contract World is AccessControl {
     bytes32 WORLD_ADMIN_ROLE = keccak256("WORLD_ADMIN");
 
     Player private playerContract;
@@ -36,29 +35,29 @@ contract World is AccessControl, Events {
     function addAdmin(address _newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_newAdmin == address(0)) revert InvalidAddress();
         _grantRole(WORLD_ADMIN_ROLE, _newAdmin);
-        emit AddNewAdmin(_newAdmin);
+        emit Events.AddNewAdmin(_newAdmin);
     }
 
     function removeAdmin(address _admin) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_admin == address(0)) revert InvalidAddress();
         _revokeRole(WORLD_ADMIN_ROLE, _admin);
-        emit RemoveAdmin(_admin);
+        emit Events.RemoveAdmin(_admin);
     }
 
     function levelUp(address player) external onlyRole(WORLD_ADMIN_ROLE) {
         if (playerOwners[player] == address(0)) revert InvalidAddress();
         uint8 decimals = coinsContract.decimals();
         uint256 mintAmount = levelMintAmount * 10 ** decimals;
-        player.levelUp(id);
+        playerContract.levelUp();
         coinsContract.mint(address(player), mintAmount);
     }
 
     function registerPlayer() external {
-        address player = new Player(msg.sender,address(this));
-        playerOwners[player] = msg.sender;
+        Player player = new Player(msg.sender,address(this));
+        playerOwners[address(player)] = msg.sender;
         playerCount[msg.sender]++;
 
-        emit RegisterPlayer(msg.sender);
+        emit Events.RegisterPlayer(msg.sender);
     }
 
     function changeLevelMint(uint256 _levelMintAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
