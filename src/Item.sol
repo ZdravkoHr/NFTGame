@@ -40,7 +40,7 @@ contract Item is ERC1155, AccessControl, ERC1155Burnable {
         emit Events.BatchPotionMinted(to, ids, amounts);
     }
 
-    function setApprovalForAll(address, bool) public override{
+    function setApprovalForAll(address, bool) public override {
         revert NotAllowed();
     }
 

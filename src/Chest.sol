@@ -145,12 +145,11 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         if (itemType == uint256(PrizeType.Weapon)) {
             item = _itemRoll(weaponChances, itemChance);
             wonPrize = prizes[PrizeType.Weapon][item];
-            itemContract.mint(msg.sender, wonPrize.ID, wonPrize.amount,"");
+            itemContract.mint(msg.sender, wonPrize.ID, wonPrize.amount, "");
         } else if (itemType == uint256(PrizeType.Potion)) {
-     
             item = _itemRoll(potionChances, itemChance);
             wonPrize = prizes[PrizeType.Potion][item];
-            itemContract.mint(msg.sender, wonPrize.ID, wonPrize.amount,"");
+            itemContract.mint(msg.sender, wonPrize.ID, wonPrize.amount, "");
         } else {
             item = _itemRoll(coinChances, itemChance);
             coinsContract.mint(msg.sender, prizes[PrizeType.Coin][item].amount);
@@ -190,8 +189,5 @@ contract Chest is VRFConsumerBaseV2, Ownable {
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
         currentNumber = randomWords[0];
         emit Events.NewRandomNumber(block.timestamp, randomWords[0]);
-    }
-    function getValues(EnumerableSet.UintSet set) external view returns(uint256[] memory){
-        return set.values();
     }
 }

@@ -12,11 +12,11 @@ import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Re
 
 contract Player is ERC721, Ownable {
     uint256 private level;
-    uint private count;
+    uint256 private count;
 
     address private world;
 
-    mapping(uint ID => uint level) private levels;
+    mapping(uint256 ID => uint256 level) private levels;
 
     mapping(uint256 id => uint256 time) public regeteredTime; // prevention for chest manipulation
 
@@ -31,12 +31,13 @@ contract Player is ERC721, Ownable {
         world = _world;
     }
 
-    function levelUp(uint ID) external onlyWorld {
+    function levelUp(uint256 ID) external onlyWorld {
         levels[ID]++;
     }
-    function mint(address user) external onlyWorld returns(uint){
+
+    function mint(address user) external onlyWorld returns (uint256) {
         count++;
-        _mint(user,count);
+        _mint(user, count);
         return count;
     }
 }
