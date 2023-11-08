@@ -21,16 +21,4 @@ contract Coins is ERC20, ERC20Burnable, AccessControl {
         _mint(to, amount);
         emit Events.CoinsMinted(to, amount);
     }
-
-    function transfer(address to, uint256 value) internal {
-        super.transfer(to, value);
-        _afterTransfer(msg.sender, to);
-    }
-
-    function transferFrom(address from, address to, uint256 value) public virtual returns (bool) {
-        super.transferFrom(from, to, value);
-        _afterTransfer(from, to);
-    }
-
-    function _afterTransfer(address from, address to) internal {}
 }

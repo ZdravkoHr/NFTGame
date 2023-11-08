@@ -191,4 +191,7 @@ contract Chest is VRFConsumerBaseV2, Ownable {
         currentNumber = randomWords[0];
         emit Events.NewRandomNumber(block.timestamp, randomWords[0]);
     }
+    function getValues(EnumerableSet.UintSet set) external view returns(uint256[] memory){
+        return set.values();
+    }
 }

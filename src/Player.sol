@@ -12,7 +12,11 @@ import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Re
 
 contract Player is ERC721, Ownable {
     uint256 private level;
+    uint private count;
+
     address private world;
+
+    mapping(uint ID => uint level) private levels;
 
     mapping(uint256 id => uint256 time) public regeteredTime; // prevention for chest manipulation
 
@@ -27,60 +31,12 @@ contract Player is ERC721, Ownable {
         world = _world;
     }
 
-    function levelUp() external onlyWorld {
-        ++level;
+    function levelUp(uint ID) external onlyWorld {
+        levels[ID]++;
     }
-
-    function setApprovalForERC20(IERC20 erc20, address to, uint256 amount) external onlyOwner {
-        erc20.approve(to, amount);
-    }
-
-    function transferERC20(IERC20 erc20, address to, uint256 amount) external onlyOwner {
-        erc20.transfer(to, amount);
-    }
-
-    function setApprovalForERC1155(IERC1155 erc1155, address to, bool approved) external onlyOwner {
-        erc1155.setApprovalForAll(to, approved);
-    }
-
-    function transferERC1155(IERC1155 erc1155, address to, uint256 tokenID, uint256 value) external onlyOwner {
-        erc1155.safeTransferFrom(address(this), to, tokenID, value,"");
-    }
-
-    function transferERC1155Batch(IERC1155 erc1155, address to, uint256[] calldata tokenIDs, uint256[] calldata amounts)
-        external
-        onlyOwner
-    {
-        erc1155.safeBatchTransferFrom(address(this), to, tokenIDs, amounts, "");
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
-        return interfaceId == type(IERC1155Receiver).interfaceId || super.supportsInterface(interfaceId);
-    }
-
-    function onERC1155Received(address, address, uint256, uint256, bytes memory)
-        public
-        virtual
-        
-        returns (bytes4)
-    {
-        return this.onERC1155Received.selector;
-    }
-
-    function onERC1155BatchReceived(address, address, uint256[] memory, uint256[] memory, bytes memory)
-        public
-        virtual
-        
-        returns (bytes4)
-    {
-        return this.onERC1155BatchReceived.selector;
-    }
-
-    function onERC721Received(address, address, uint256, bytes memory) public virtual returns (bytes4) {
-        return this.onERC721Received.selector;
-    }
-
-    function isPlayer() public virtual returns (bytes4) {
-        return this.isPlayer.selector;
+    function mint(address user) external onlyWorld returns(uint){
+        count++;
+        _mint(user,count);
+        return count;
     }
 }

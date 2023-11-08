@@ -17,8 +17,7 @@ contract World is AccessControl {
     Coins public coinsContract;
     Item public itemContract;
 
-    mapping(address user => uint256 playerCount) private playerCount;
-    mapping(address player => address owner) private playerOwners;
+    mapping(uint playerID => address owner) private playerOwners;
 
     uint256 levelMintAmount;
 
@@ -44,19 +43,18 @@ contract World is AccessControl {
         emit Events.RemoveAdmin(_admin);
     }
 
-    function levelUp(address player) external onlyRole(WORLD_ADMIN_ROLE) {
-        if (playerOwners[player] == address(0)) revert InvalidAddress();
+    function levelUp(uint ID) external onlyRole(WORLD_ADMIN_ROLE) {
+        if (playerOwners[ID] == address(0)) revert InvalidAddress();
         uint8 decimals = coinsContract.decimals();
         uint256 mintAmount = levelMintAmount * 10 ** decimals;
-        playerContract.levelUp();
-        coinsContract.mint(address(player), mintAmount);
+        playerContract.levelUp(ID);
+        coinsContract.mint(playerOwners[ID], mintAmount);
     }
 
     function registerPlayer() external {
-        Player player = new Player(msg.sender,address(this));
-        playerOwners[address(player)] = msg.sender;
+        uint ID = playerContract.mint(msg.sender);
+        playerOwners[ID] = msg.sender;
         playerCount[msg.sender]++;
-
         emit Events.RegisterPlayer(msg.sender);
     }
 
