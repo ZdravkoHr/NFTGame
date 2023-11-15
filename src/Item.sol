@@ -23,15 +23,34 @@ contract Item is ERC1155, AccessControl, ERC1155Burnable {
         emit Events.URIset(uri);
     }
 
+    /*
+      @notice returns the URI
+     */
     function getURI(uint256 tokenID) external view returns (string memory) {
         return string.concat(_uri, "ID:", Strings.toString(tokenID));
     }
 
+    /*
+      @notice mints item
+      @dev `MINTER_ROLE` should be world and chest
+      @param `account` - the receiver of this item
+      @param `id` - item ID
+      @param `amount` - amount
+      @param `data` - extra data
+     */
     function mint(address account, uint256 id, uint256 amount, bytes memory data) public onlyRole(MINTER_ROLE) {
         _mint(account, id, amount, data);
         emit Events.PotionMinted(account, id, amount);
     }
 
+    /*
+      @notice used to mint multiple items at once
+      @dev `MINTER_ROLE` should be world and chest
+      @param `to` - the receiver of this item
+      @param `ids` - item IDs
+      @param `amounts` - amounts
+      @param `data` - extra data
+     */
     function mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
         public
         onlyRole(MINTER_ROLE)
@@ -40,6 +59,7 @@ contract Item is ERC1155, AccessControl, ERC1155Burnable {
         emit Events.BatchPotionMinted(to, ids, amounts);
     }
 
+    
     function setApprovalForAll(address, bool) public override {
         revert NotAllowed();
     }

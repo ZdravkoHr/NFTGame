@@ -11,15 +11,24 @@ import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 contract Player is ERC721, Ownable {
-    uint256 private level;
-    uint256 private count;
+    uint256 private count; // Counter 
 
-    address private world;
+    address private world; // Address of the creation world
 
-    mapping(uint256 ID => uint256 level) private levels;
+    /*
+      @notice maps playerIDs => their levels
+      */
+    mapping(uint256 playerID => uint256 level) private levels;
 
-    mapping(uint256 id => uint256 time) public regeteredTime; // prevention for chest manipulation
+    /*
+      @notice maps playerIDs => their registered time
+      @dev used by chest to prevent player spam
+      */
+    mapping(uint256 playerID => uint256 time) public regesteredTime; 
 
+    /*
+      @notice used by world to level up players
+      */
     modifier onlyWorld() {
         if (msg.sender != world) {
             revert OnlyWorld();
@@ -31,12 +40,21 @@ contract Player is ERC721, Ownable {
         world = _world;
     }
 
-    function levelUp(uint256 ID) external onlyWorld {
-        levels[ID]++;
+    /*
+      @notice increases the level of players
+      @dev not used for now
+      @param `ID` - playerID
+      */
+    function levelUp(uint256 playerID) external onlyWorld {
+        levels[playerID]++;
     }
-
+    /*
+      @notice mints a new player
+      @param `user` - the address of the minter
+      */
     function mint(address user) external onlyWorld returns (uint256) {
         count++;
+        regesteredTime[count] = block.timestamp;
         _mint(user, count);
         return count;
     }

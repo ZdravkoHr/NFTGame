@@ -17,6 +17,9 @@ contract World is AccessControl {
     Coins public coinsContract;
     Item public itemContract;
 
+    /*
+        @notice maps playerIDs => the user owning it
+     */
     mapping(uint256 playerID => address owner) private playerOwners;
 
     uint256 levelMintAmount;
@@ -31,18 +34,28 @@ contract World is AccessControl {
         levelMintAmount = _levelMintAmount;
     }
 
+    /*
+      @notice can add admins
+     */
     function addAdmin(address _newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_newAdmin == address(0)) revert InvalidAddress();
         _grantRole(WORLD_ADMIN_ROLE, _newAdmin);
         emit Events.AddNewAdmin(_newAdmin);
     }
 
+    /*
+      @notice remove add admins
+     */
     function removeAdmin(address _admin) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (_admin == address(0)) revert InvalidAddress();
         _revokeRole(WORLD_ADMIN_ROLE, _admin);
         emit Events.RemoveAdmin(_admin);
     }
 
+    /*
+      @notice level-ups a player, not used for now
+      @param `ID` - player ID 
+     */
     function levelUp(uint256 ID) external onlyRole(WORLD_ADMIN_ROLE) {
         if (playerOwners[ID] == address(0)) revert InvalidAddress();
         uint8 decimals = coinsContract.decimals();
@@ -51,12 +64,18 @@ contract World is AccessControl {
         coinsContract.mint(playerOwners[ID], mintAmount);
     }
 
+    /*
+      @notice used to register players
+     */
     function registerPlayer() external {
         uint256 ID = playerContract.mint(msg.sender);
         playerOwners[ID] = msg.sender;
         emit Events.RegisterPlayer(msg.sender);
     }
 
+    /*
+      @notice changes the mint amount on `levelUp`
+     */
     function changeLevelMint(uint256 _levelMintAmount) external onlyRole(DEFAULT_ADMIN_ROLE) {
         levelMintAmount = _levelMintAmount;
     }
